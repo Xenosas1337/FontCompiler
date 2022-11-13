@@ -1,4 +1,6 @@
 #include "FontCompiler.h"
+#include "msdfgen/include/lodepng.h"
+
 
 #include <fstream>
 #include <iostream>
@@ -26,7 +28,7 @@ namespace SH_COMP
 
   */
   /***************************************************************************/
-  void SHFontCompiler::WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<msdfgen::byte, 3> const& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept
+  void FontCompiler::WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<float, 3>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept
   {
     if (!fontAsset)
       return;
@@ -79,8 +81,9 @@ namespace SH_COMP
 
     // copy data from bitmap to asset. Each channel is a 32 bit float and there are 3 channels.
     fontAsset->bitmapData = std::make_unique<unsigned char[]>(bytesRequired);
-    std::memcpy (fontAsset->bitmapData.get(), fontBitmap.operator const msdfgen::byte *(), bytesRequired);
+    std::memcpy (fontAsset->bitmapData.get(), fontBitmap.operator float *(), bytesRequired);
     
+    msdf_atlas::saveImage(fontBitmap.operator msdfgen::BitmapConstRef<float, 3>(), msdf_atlas::ImageFormat::PNG, "test_font/testPNG.png", msdf_atlas::YDirection::TOP_DOWN);
 
     fontAsset->bitmapWidth = fontBitmap.width();
     fontAsset->bitmapHeight = fontBitmap.height();
@@ -101,7 +104,7 @@ namespace SH_COMP
   
   */
   /***************************************************************************/
-  std::optional<AssetPath> SHFontCompiler::LoadAndCompileFont(msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept
+  std::optional<AssetPath> FontCompiler::LoadAndCompileFont(msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept
   {
     msdfgen::FontHandle* fontHandle = nullptr;
     
@@ -141,13 +144,14 @@ namespace SH_COMP
   
   */
   /***************************************************************************/
-  FontAsset const* SHFontCompiler::CompileFontToMemory(msdfgen::FontHandle* fontHandle) noexcept
+  FontAsset const* FontCompiler::CompileFontToMemory(msdfgen::FontHandle* fontHandle) noexcept
   {
     // Individual glyph geometry
     std::vector<msdf_atlas::GlyphGeometry> glyphData;
 
     // Actual bitmap data
-    msdfgen::Bitmap<msdfgen::byte, 3> fontBitmap;
+    //msdfgen::Bitmap<msdfgen::byte, 3> fontBitmap;
+    msdfgen::Bitmap<float, 3> fontBitmap;
 
     // Font geometry required to get advance
     msdf_atlas::FontGeometry fontGeometry (&glyphData);
@@ -180,7 +184,8 @@ namespace SH_COMP
     generator.setThreadCount(4);
     generator.generate(glyphData.data(), static_cast<int>(glyphData.size()));
 
-    fontBitmap = std::move(((msdfgen::Bitmap<msdfgen::byte, 3>&&)generator.atlasStorage()));
+    fontBitmap = std::move(((msdfgen::Bitmap<float, 3>&&)generator.atlasStorage()));
+    //fontBitmap = std::move(((msdfgen::Bitmap<msdfgen::byte, 3>&&)generator.atlasStorage()));
 
     // at this point we have all the required data to initialize a font asset.
 
@@ -211,7 +216,7 @@ namespace SH_COMP
   
   */ 
   /***************************************************************************/
-  std::string SHFontCompiler::CompileFontToBinary(AssetPath path, FontAsset const& asset) noexcept
+  std::string FontCompiler::CompileFontToBinary(AssetPath path, FontAsset const& asset) noexcept
   {
     std::string newPath{ path.string() };
     newPath = newPath.substr(0, newPath.find_last_of('.'));
@@ -237,14 +242,14 @@ namespace SH_COMP
     }
 
     // Write width of bitmap
-    file.write(reinterpret_cast<char const*>(asset.bitmapWidth), sizeof (uint32_t));
+    file.write(reinterpret_cast<char const*>(&asset.bitmapWidth), sizeof (uint32_t));
 
     // Write height of bitmap
-    file.write(reinterpret_cast<char const*>(asset.bitmapHeight), sizeof(uint32_t));
+    file.write(reinterpret_cast<char const*>(&asset.bitmapHeight), sizeof(uint32_t));
 
     // write size required by bitmap
     uint32_t bytesRequired = asset.bitmapWidth * asset.bitmapHeight * BYTES_PER_CHANNEL * NUM_CHANNELS;
-    file.write(reinterpret_cast<char const*>(bytesRequired), sizeof(uint32_t));
+    file.write(reinterpret_cast<char const*>(&bytesRequired), sizeof(uint32_t));
 
 
     // now we write the actual bitmap
