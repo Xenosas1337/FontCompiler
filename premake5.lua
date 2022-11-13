@@ -11,6 +11,11 @@ architecture "x64"
     "debug"
   }
 
+  group "Dependencies"
+	include "Dependencies/msdf"
+  group ""
+
+
 project "FontCompiler"
   kind "ConsoleApp"
   language "C++"
@@ -39,13 +44,13 @@ project "FontCompiler"
     "%{prj.location}/src",
   }
   
-  dependson
+  links
   {
     "msdfgen",
-    "msdf-atlas-gen",
-  }
+    "msdf-atlas-gen"
+}
   
-  links
+  dependson
   {
     "msdfgen",
     "msdf-atlas-gen",

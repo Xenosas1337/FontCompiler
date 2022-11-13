@@ -43,7 +43,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>bin\release\</OutDir>
-    <IntDir>bin_int\release\</IntDir>
+    <IntDir>bin_int\release\FontCompiler\</IntDir>
     <TargetName>FontCompiler</TargetName>
     <TargetExt>.exe</TargetExt>
     <IncludePath>Dependencies\msdf;Dependencies\msdf\msdfgen;$(IncludePath)</IncludePath>
@@ -51,7 +51,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>bin\debug\</OutDir>
-    <IntDir>bin_int\debug\</IntDir>
+    <IntDir>bin_int\debug\FontCompiler\</IntDir>
     <TargetName>FontCompiler</TargetName>
     <TargetExt>.exe</TargetExt>
     <IncludePath>Dependencies\msdf;Dependencies\msdf\msdfgen;$(IncludePath)</IncludePath>
@@ -74,7 +74,6 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>msdfgen.lib;msdf-atlas-gen.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='debug|x64'">
@@ -92,17 +91,24 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>msdfgen.lib;msdf-atlas-gen.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\FontAsset.h" />
     <ClInclude Include="src\AssetMacros.h" />
+    <ClInclude Include="src\FontAsset.h" />
     <ClInclude Include="src\FontCompiler.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\FontCompiler.cpp" />
     <ClCompile Include="src\main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Dependencies\msdf\msdfgen\msdfgen.vcxproj">
+      <Project>{8900D8DD-F5DF-5679-FEF7-E14F6A56BDDA}</Project>
+    </ProjectReference>
+    <ProjectReference Include="Dependencies\msdf\msdf-atlas-gen.vcxproj">
+      <Project>{38BD587B-248B-4C81-0D1F-BDA7F98B28E6}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
