@@ -28,7 +28,7 @@ namespace SH_COMP
 
   */
   /***************************************************************************/
-  void FontCompiler::WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<msdf_atlas::byte, 3>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept
+  void FontCompiler::WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<msdf_atlas::byte, 4>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept
   {
     if (!fontAsset)
       return;
@@ -83,7 +83,7 @@ namespace SH_COMP
     fontAsset->bitmapData = std::make_unique<unsigned char[]>(bytesRequired);
     std::memcpy (fontAsset->bitmapData.get(), fontBitmap.operator msdf_atlas::byte *(), bytesRequired);
     
-    msdf_atlas::saveImage(fontBitmap.operator msdfgen::BitmapConstRef<msdf_atlas::byte, 3>(), msdf_atlas::ImageFormat::PNG, "test_font/testPNG.png", msdf_atlas::YDirection::TOP_DOWN);
+    msdf_atlas::saveImage(fontBitmap.operator msdfgen::BitmapConstRef<msdf_atlas::byte, 4>(), msdf_atlas::ImageFormat::PNG, "test_font/testPNG.png", msdf_atlas::YDirection::TOP_DOWN);
 
     fontAsset->bitmapWidth = fontBitmap.width();
     fontAsset->bitmapHeight = fontBitmap.height();
@@ -151,7 +151,7 @@ namespace SH_COMP
 
     // Actual bitmap data
     //msdfgen::Bitmap<msdfgen::byte, 3> fontBitmap;
-    msdfgen::Bitmap<msdf_atlas::byte, 3> fontBitmap;
+    msdfgen::Bitmap<msdf_atlas::byte, 4> fontBitmap;
 
     // Font geometry required to get advance
     msdf_atlas::FontGeometry fontGeometry (&glyphData);
@@ -178,13 +178,13 @@ namespace SH_COMP
     atlasPacker.getDimensions(width, height);
 
    // generate the atlas
-    msdf_atlas::ImmediateAtlasGenerator<float, 3, msdf_atlas::msdfGenerator, msdf_atlas::BitmapAtlasStorage<msdf_atlas::byte, 3>> generator(width, height);
+    msdf_atlas::ImmediateAtlasGenerator<float, 4, msdf_atlas::mtsdfGenerator, msdf_atlas::BitmapAtlasStorage<msdf_atlas::byte, 4>> generator(width, height);
     msdf_atlas::GeneratorAttributes genAttribs;
     generator.setAttributes(genAttribs);
     generator.setThreadCount(4);
     generator.generate(glyphData.data(), static_cast<int>(glyphData.size()));
 
-    fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, 3>&&)generator.atlasStorage()));
+    fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, 4>&&)generator.atlasStorage()));
     //fontBitmap = std::move(((msdfgen::Bitmap<msdfgen::byte, 3>&&)generator.atlasStorage()));
 
     // at this point we have all the required data to initialize a font asset.
