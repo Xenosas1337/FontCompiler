@@ -44,6 +44,7 @@ int main(int argc, char* argv[])
     SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, path);
   }
 
+  //SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, "test_font/SegoeUI.ttf");
   msdfgen::deinitializeFreetype(freetypeHandle);
 
   return 0;

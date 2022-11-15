@@ -9,7 +9,7 @@ namespace SH_COMP
   class FontCompiler
   {
   private:
-    static void WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<float, 3>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept;
+    static void WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<msdf_atlas::byte, 3>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept;
     //static void WriteToFontAsset(FontAsset* fontAsset, std::vector<msdf_atlas::GlyphGeometry> const& glyphData, msdfgen::Bitmap<msdfgen::byte, 3>& fontBitmap, msdf_atlas::FontGeometry const& fontGeometry) noexcept;
   	
   public:
