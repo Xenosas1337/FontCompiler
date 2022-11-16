@@ -18,7 +18,7 @@
 namespace SH_COMP
 {
   static constexpr uint32_t FONT_MATRIX_SIZE = 16;
-  static constexpr uint32_t NUM_CHANNELS = 3;
+  static constexpr uint32_t NUM_CHANNELS = 4;
   static constexpr uint32_t BYTES_PER_CHANNEL = 1;
 
 
