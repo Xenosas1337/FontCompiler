@@ -56,7 +56,7 @@ namespace SH_COMP
       float const NORMALIZED_TEX_DIMS[2] = { static_cast<float> (atlasR - atlasL), static_cast<float> (atlasT - atlasB) };
 
       // When we render the quad, it has to correctly scale depending on what letter/glyph we are rendering. This is for that scale.
-      float const QUAD_SCALE[2] { static_cast<float> (atlasPR - atlasL), static_cast<float> (atlasT - atlasB) };
+      float const QUAD_SCALE[2] { static_cast<float> (atlasPR - atlasPL), static_cast<float> (atlasPT - atlasPB) };
 
       // initialize a matrix for uv and quad transformation data
       GlyphData transformData
