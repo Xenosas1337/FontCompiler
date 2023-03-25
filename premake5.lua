@@ -73,6 +73,5 @@ project "FontCompiler"
     optimize "On"
     defines{"_RELEASE"}
   
-  filter "configurations:Publish"
-    optimize "On"
-    defines{"_RELEASE, _PUBLISH"}
+    filter "configurations:Publish"
+      flags {"ExcludeFromBuild"}
