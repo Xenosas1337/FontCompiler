@@ -1,19 +1,19 @@
 MSDFInclude = "%{prj.location}\\Dependencies\\msdf" 
 MSDFGenInclude = "%{prj.location}\\Dependencies\\msdf\\msdfgen" 
 
--- outputdir = "%{wks.location}/bin/%{cfg.buildcfg}"
--- interdir = "%{wks.location}/bin_int"
--- workspace "fontcompile"
--- architecture "x64"
-  -- configurations
-  -- {
-    -- "release",
-    -- "debug"
-  -- }
+outputdir = "%{wks.location}/bin/%{cfg.buildcfg}"
+interdir = "%{wks.location}/bin_int"
+workspace "fontcompile"
+architecture "x64"
+  configurations
+  {
+    "release",
+    "debug"
+  }
 
-  -- group "Dependencies"
-	-- include "Dependencies/msdf"
-  -- group ""
+  group "Dependencies"
+	include "Dependencies/msdf"
+  group ""
 
 
 project "FontCompiler"

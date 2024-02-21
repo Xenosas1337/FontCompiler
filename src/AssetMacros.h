@@ -15,20 +15,13 @@
 #include <filesystem>
 
  // Typedefs
-typedef std::filesystem::path AssetPath;
-
+using AssetPath = std::filesystem::path;
 
 //Directory
-#ifdef _PUBLISH
-constexpr std::string_view ASSET_ROOT{ "Assets" };
-constexpr std::string_view BUILT_IN_ASSET_ROOT {"Built_In"};
-#else
-constexpr std::string_view ASSET_ROOT {"../../Assets"};
-constexpr std::string_view BUILT_IN_ASSET_ROOT{ "../../Built_In" };
-#endif
+constexpr std::string_view ASSET_ROOT {"Fonts"};
 
 // ASSET EXTENSIONS
-constexpr std::string_view FONT_EXTENSION{ ".shfont" };
+constexpr std::string_view FONT_EXTENSION{ ".dash_font" };
 
 // EXTERNAL EXTENSIONS
 constexpr std::string_view TTF_EXTENSION{ ".ttf" };
