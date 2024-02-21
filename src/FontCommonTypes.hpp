@@ -18,6 +18,16 @@ namespace dash_tools
   static constexpr uint32_t NUM_CHANNELS = 4;
   static constexpr uint32_t BYTES_PER_CHANNEL = 1;
 
+  static constexpr uint32_t GLPYH_TEX_DIMS_X_ARRAY_INDEX = 0;
+  static constexpr uint32_t GLPYH_TEX_DIMS_Y_ARRAY_INDEX = 1;
+  static constexpr uint32_t GLPYH_KERNING_ARRAY_INDEX = 3;
+  static constexpr uint32_t GLPYH_TEX_POS_X_ARRAY_INDEX = 4;
+  static constexpr uint32_t GLPYH_TEX_POS_Y_ARRAY_INDEX = 5;
+  static constexpr uint32_t GLYPH_SCALE_X_ARRAY_INDEX = 8;
+  static constexpr uint32_t GLYPH_SCALE_Y_ARRAY_INDEX = 9;
+  static constexpr uint32_t GLYPH_POS_X_ARRAY_INDEX = 10;
+  static constexpr uint32_t GLYPH_POS_Y_ARRAY_INDEX = 11;
+
 
   struct GlyphIndexingData
   {
@@ -28,19 +38,12 @@ namespace dash_tools
   struct GlyphData
   {
     float data[FONT_MATRIX_SIZE];
-    float kerning;
   };
 
   struct PerKernPair
   {
     int lhs;
     int rhs;
-    float kerning;
-  };
-
-  struct PerGlyphKerning
-  {
-    int glyph;
     float kerning;
   };
 
@@ -69,7 +72,7 @@ namespace dash_tools
     KernPairData kernPairs;
 
     UnpackedFontData (void) = default;
-    UnpackedFontData (UnpackedFontData&& rhs) = default;
+    UnpackedFontData (UnpackedFontData&& rhs) noexcept = default;
 
     UnpackedFontData(UnpackedFontData const& rhs) = delete;
     UnpackedFontData& operator=(UnpackedFontData const& rhs) = delete;

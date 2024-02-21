@@ -66,19 +66,19 @@ namespace dash_tools
 
       // initialize a matrix for uv and quad transformation data
       GlyphData currentGlyphData
-      { {
-
+      { 
+        {
           // For scaling the tex coords
-          NORMALIZED_TEX_DIMS[0],       0.0f,                     0.0f,                        0.0f,
-          0.0f,                       NORMALIZED_TEX_DIMS[1],     0.0f,                        0.0f,
+          NORMALIZED_TEX_DIMS[0],     NORMALIZED_TEX_DIMS[1],     0.0f,                        static_cast<GlyphKerningType>(glyphGeometry[i].getAdvance()),
 
           // For translating the tex coords to correct offset in bitmap texture
           static_cast<float>(atlasL), static_cast<float>(atlasB), 1.0f,                        0.0f,
 
           // Stores the transformation for a quad to correctly shape the glyph (first 2 values) and the bearing (last 2)
-          QUAD_SCALE[0],              QUAD_SCALE[1],              static_cast<float>(atlasPL), static_cast<float>(atlasPB)
+          QUAD_SCALE[0],              QUAD_SCALE[1],              static_cast<float>(atlasPL), static_cast<float>(atlasPB),
+
+          0.0f,                       0.0f,                       0.0f,                        0.0f,
           },
-        static_cast<GlyphKerningType>(glyphGeometry[i].getAdvance())
       };
 
       // Push 1 set of data for a character/glyph into the asset.
