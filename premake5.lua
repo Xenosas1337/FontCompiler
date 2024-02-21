@@ -30,6 +30,7 @@ project "FontCompiler"
   files  
   {
     "%{prj.location}/src/**.h",
+    "%{prj.location}/src/**.hpp",
     "%{prj.location}/src/**.cpp",
   }
 
@@ -75,3 +76,4 @@ project "FontCompiler"
   
     filter "configurations:Publish"
       flags {"ExcludeFromBuild"}
+

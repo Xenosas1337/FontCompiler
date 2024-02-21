@@ -1,4 +1,4 @@
-#include "FontCompiler.h"
+#include "FontCompiler.hpp"
 
 #include <vector>
 #include <filesystem>
@@ -12,12 +12,12 @@ int main(int argc, char* argv[])
 
   if (argc == 1)
   {
-    if (std::filesystem::is_directory(ASSET_ROOT))
+    if (std::filesystem::is_directory(dash_tools::ASSET_ROOT))
     {
       for (auto& dir :
-        std::filesystem::recursive_directory_iterator{ ASSET_ROOT })
+        std::filesystem::recursive_directory_iterator{ dash_tools::ASSET_ROOT })
       {
-        if (dir.path().extension().string() == TTF_EXTENSION)
+        if (dir.path().extension().string() == dash_tools::TTF_EXTENSION)
         {
           auto path = dir.path();
           path.make_preferred();
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
 
   for (auto const& path : paths)
   {
-    SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, path);
+    dash_tools::FontCompiler::LoadAndCompileFont(freetypeHandle, path);
   }
 
   //SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, "test_font/SegoeUI.ttf");

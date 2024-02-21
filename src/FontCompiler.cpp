@@ -1,11 +1,11 @@
-#include "FontCompiler.h"
+#include "FontCompiler.hpp"
 #include "msdfgen/include/lodepng.h"
 
 
 #include <fstream>
 #include <iostream>
 
-namespace SH_COMP
+namespace dash_tools
 {
   /***************************************************************************/
   /*!
@@ -28,17 +28,17 @@ namespace SH_COMP
 
   */
   /***************************************************************************/
-  void FontCompiler::GenerateFontToBinaryData(FontToBinaryData&                             fontToBinaryData, 
-                                              std::vector<msdf_atlas::GlyphGeometry> const& glyphData, 
+  void FontCompiler::GenerateUnpackedFontData(UnpackedFontData&                             unpackedFontData, 
+                                              std::vector<msdf_atlas::GlyphGeometry> const& glyphGeometry, 
                                               msdf_atlas::FontGeometry const&               fontGeometry) noexcept
   {
 
     // Bitmap dimensions saved locally for convenience
-    uint32_t BITMAP_WIDTH = fontToBinaryData.fontBitmap.width();
-    uint32_t BITMAP_HEIGHT = fontToBinaryData.fontBitmap.height();
+    uint32_t const BITMAP_WIDTH = unpackedFontData.bitmapWidth;
+    uint32_t const BITMAP_HEIGHT = unpackedFontData.bitmapHeight;
 
-    uint32_t numGlyphs = static_cast<uint32_t>(glyphData.size());
-    for (uint32_t i = 0; i < numGlyphs; ++i)
+    uint32_t const NUM_GLYPHS = static_cast<uint32_t>(glyphGeometry.size());
+    for (uint32_t i = 0; i < NUM_GLYPHS; ++i)
     {
       // bounding box of the glyph in atlas
     	double atlasL = 0.0, atlasR = 0.0, atlasT = 0.0, atlasB = 0.0;
@@ -47,8 +47,8 @@ namespace SH_COMP
       double atlasPL = 0.0, atlasPR = 0.0, atlasPT = 0.0, atlasPB = 0.0;
 
       // initialize the bounding boxes
-      glyphData[i].getQuadAtlasBounds(atlasL, atlasB, atlasR, atlasT);
-      glyphData[i].getQuadPlaneBounds(atlasPL, atlasPB, atlasPR, atlasPT);
+      glyphGeometry[i].getQuadAtlasBounds(atlasL, atlasB, atlasR, atlasT);
+      glyphGeometry[i].getQuadPlaneBounds(atlasPL, atlasPB, atlasPR, atlasPT);
 
       // normalize the bounding box to (0 - 1).
       atlasL /= BITMAP_WIDTH;
@@ -63,22 +63,25 @@ namespace SH_COMP
       float const QUAD_SCALE[2] { static_cast<float> (atlasPR - atlasPL), static_cast<float> (atlasPT - atlasPB) };
 
       // initialize a matrix for uv and quad transformation data
-      GlyphData transformData
-      {
-        // For scaling the tex coords
-        NORMALIZED_TEX_DIMS[0],       0.0f,                     0.0f,                        0.0f, 
-        0.0f,                       NORMALIZED_TEX_DIMS[1],     0.0f,                        0.0f, 
+      GlyphData currentGlyphData
+      { {
 
-        // For translating the tex coords
-        static_cast<float>(atlasL), static_cast<float>(atlasB), 1.0f,                        0.0f, 
+          // For scaling the tex coords
+          NORMALIZED_TEX_DIMS[0],       0.0f,                     0.0f,                        0.0f,
+          0.0f,                       NORMALIZED_TEX_DIMS[1],     0.0f,                        0.0f,
 
-        // Stores the transformation for a quad to correctly shape the glyph (first 2 values) and the bearing (last 2)
-        QUAD_SCALE[0],              QUAD_SCALE[1],              static_cast<float>(atlasPL), static_cast<float>(atlasPB)
+          // For translating the tex coords
+          static_cast<float>(atlasL), static_cast<float>(atlasB), 1.0f,                        0.0f,
+
+          // Stores the transformation for a quad to correctly shape the glyph (first 2 values) and the bearing (last 2)
+          QUAD_SCALE[0],              QUAD_SCALE[1],              static_cast<float>(atlasPL), static_cast<float>(atlasPB)
+          },
+        static_cast<GlyphKerningType>(glyphGeometry[i].getAdvance())
       };
 
       // Push 1 set of data for a character/glyph into the asset.
-      fontToBinaryData.glyphTransformations.push_back(transformData);
-      fontToBinaryData.glyphs.push_back(glyphData[i].getCodepoint());
+      unpackedFontData.glyphData.push_back(currentGlyphData);
+      unpackedFontData.glyphMappings.emplace(static_cast<GlyphType>(glyphGeometry[i].getCodepoint()), i);
     }
 
     // font geometry kerning
@@ -86,25 +89,7 @@ namespace SH_COMP
 
     // Copies every kern pair to a separate map.
     for (auto const& [PAIR, KERNING] : FG_KERNING)
-      fontToBinaryData.kernPairs.emplace(PAIR, static_cast<float> (KERNING));
-
-    // Stores the glyph advances indexable by the glyph
-    auto const& GLYPHS = fontGeometry.getGlyphs();
-    for (auto const& GLYPH : GLYPHS)
-      fontToBinaryData.glyphKerning.emplace(GLYPH.getCodepoint(), GLYPH.getAdvance());
-
-    
-
-    //// copy data from bitmap to asset. Each channel is a 32 bit float and there are 3 channels.
-    //fontAsset.bitmapData = std::make_unique<unsigned char[]>(bytesRequired);
-    //std::memcpy (fontAsset.bitmapData.get(), fontBitmap.operator msdf_atlas::byte *(), bytesRequired);
-    //
-    //static int testWriteIndex = 0;
-
-    //msdf_atlas::saveImage(fontBitmap.operator msdfgen::BitmapConstRef<msdf_atlas::byte, 4>(), msdf_atlas::ImageFormat::PNG, std::string ("Fonts/testPNG" + std::to_string(testWriteIndex++) + ".png").c_str(), msdf_atlas::YDirection::TOP_DOWN);
-
-    //fontAsset.bitmapWidth = fontAsset.fontBitmap.width();
-    //fontAsset.bitmapHeight = fontBitmap.height();
+      unpackedFontData.kernPairs.emplace(PAIR, static_cast<float> (KERNING));
   }
 
   /***************************************************************************/
@@ -126,19 +111,18 @@ namespace SH_COMP
   {
     msdfgen::FontHandle* fontHandle = nullptr;
     
-    // XQ I need your help for path manipulation to actually load the msdfgen::FontHandle here. Am I doing this correctly?
     fontHandle = msdfgen::loadFont(freetypeHandle, path.string().c_str());
 
     if (fontHandle)
     {
-      // Compile a font asset
-      auto* fontData = CompileFontToMemory(fontHandle);
+      // Extract relevant memory from font handle
+      auto* unpackedFontData = CompileFontToMemory(fontHandle, path);
 
       // No path to binary format
-      if (!fontData)
+      if (!unpackedFontData)
         return {};
 
-      return CompileFontToBinary(path, *fontData);
+      return PackFontDataToFile(path, *unpackedFontData);
     }
 
     std::cout << "Unable to open font file: " << path.string() << std::endl;
@@ -158,14 +142,14 @@ namespace SH_COMP
       MSDF font handle required to initialize member variables in SHFontAsset.
    
     \return 
-      A pointer to a brand new font asset.
+      A pointer to an object storing data meant for the binary file.
   
   */
   /***************************************************************************/
-  FontToBinaryData const* FontCompiler::CompileFontToMemory(msdfgen::FontHandle* fontHandle) noexcept
+  UnpackedFontData const* FontCompiler::CompileFontToMemory(msdfgen::FontHandle* fontHandle, AssetPath path) noexcept
   {
     // Dynamically allocate new asset
-    FontToBinaryData* newData = new FontToBinaryData();
+    UnpackedFontData* newData = new UnpackedFontData();
 
     // Individual glyph geometry
     std::vector<msdf_atlas::GlyphGeometry> glyphData;
@@ -201,14 +185,29 @@ namespace SH_COMP
     generator.setThreadCount(4);
     generator.generate(glyphData.data(), static_cast<int>(glyphData.size()));
 
-    newData->fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, 4>&&)generator.atlasStorage()));
-    //fontBitmap = std::move(((msdfgen::Bitmap<msdfgen::byte, 3>&&)generator.atlasStorage()));
+    // Write to a separate image file that just contains the atlas for testing
+    bool imageSaved = msdf_atlas::saveImage(generator.atlasStorage().operator msdfgen::BitmapConstRef<msdf_atlas::byte, 4>(),
+                                            msdf_atlas::ImageFormat::PNG,
+                                            path.replace_extension(".png").string().c_str(),
+                                            msdf_atlas::YDirection::TOP_DOWN);
+
+    if (!imageSaved)
+      std::cout << "Tester code: Failed to save image. " << std::endl;
+
+    //msdfgen::Bitmap<msdfgen::byte, 3> fontBitmap;
+    msdfgen::Bitmap<msdf_atlas::byte, 4> fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, 4>&&)generator.atlasStorage()));
+
+    // Copy the bitmap to unpacked data object
+    uint32_t const BITMAP_BYTES = fontBitmap.width() * fontBitmap.height() * NUM_CHANNELS * BYTES_PER_CHANNEL;
+    newData->bitmapWidth = fontBitmap.width();
+    newData->bitmapHeight = fontBitmap.height();
+    newData->fontBitmap.resize(BITMAP_BYTES);
+    std::memcpy(newData->fontBitmap.data(), fontBitmap.operator msdf_atlas::byte*(), BITMAP_BYTES);
 
     // at this point we have all the required data to initialize a font asset.
 
-
     // Now we populate it with data
-    GenerateFontToBinaryData(*newData, glyphData, fontGeometry);
+    GenerateUnpackedFontData(*newData, glyphData, fontGeometry);
 
     return newData;
   }
@@ -218,7 +217,7 @@ namespace SH_COMP
    
     \brief
       After generating the asset we call this function to serialize the font
-      data into binary data.
+      data into binary data and then to file.
     
     \param path
       path to font file (?).
@@ -231,54 +230,46 @@ namespace SH_COMP
   
   */ 
   /***************************************************************************/
-  std::string FontCompiler::CompileFontToBinary(AssetPath path, FontToBinaryData const& fontToBinaryData) noexcept
+  std::string FontCompiler::PackFontDataToFile(AssetPath path, UnpackedFontData const& unpackedFontData) noexcept
   {
     std::string newPath{ path.string() };
     newPath = newPath.substr(0, newPath.find_last_of('.'));
     newPath += FONT_EXTENSION.data();
 
     // Bitmap dimensions saved locally for convenience
-    uint32_t const BITMAP_WIDTH = fontToBinaryData.fontBitmap.width();
-    uint32_t const BITMAP_HEIGHT = fontToBinaryData.fontBitmap.height();
+    uint32_t const BITMAP_WIDTH = unpackedFontData.bitmapWidth;
+    uint32_t const BITMAP_HEIGHT = unpackedFontData.bitmapHeight;
 
     // Number of glyphs on stack for convenience
-    uint32_t const NUM_GLYPHS = static_cast<uint32_t>(fontToBinaryData.glyphTransformations.size());
+    uint32_t const NUM_GLYPHS = static_cast<uint32_t>(unpackedFontData.glyphData.size());
+
+    uint32_t const GLYPH_MAPPING_BYTES = static_cast<uint32_t>(unpackedFontData.glyphMappings.size() * (sizeof(uint32_t) + sizeof(GlyphType)));
 
     // size required by bitmap
     uint32_t const BITMAP_BYTES = BITMAP_WIDTH * BITMAP_HEIGHT * BYTES_PER_CHANNEL * NUM_CHANNELS;
 
-    // size required for glyphs themselves
-    uint32_t const GLYPHS_BYTES = static_cast<uint32_t>(sizeof(msdfgen::unicode_t) * fontToBinaryData.glyphs.size());
-
-    uint32_t const GLYPHS_DATA_BYTES = static_cast<uint32_t>(sizeof(GlyphData) * fontToBinaryData.glyphTransformations.size());
-
-    // Number of glyph kernings
-    uint32_t const NUM_GLYPH_KERNINGS = static_cast<uint32_t>(fontToBinaryData.glyphKerning.size());
-
-    // bytes required to store glyph specific kernings
-    uint32_t const GLYPH_KERNING_BYTES = static_cast<uint32_t> (sizeof(PerGlyphKerning) * fontToBinaryData.glyphKerning.size());
+    // size required to store the glyph specific data
+    uint32_t const GLYPHS_DATA_BYTES = static_cast<uint32_t>(sizeof(GlyphData) * unpackedFontData.glyphData.size());
 
     // Number of unique kern pairs
-    uint32_t const NUM_KERN_PAIRS = static_cast<uint32_t>(fontToBinaryData.kernPairs.size());
+    uint32_t const NUM_KERN_PAIRS = static_cast<uint32_t>(unpackedFontData.kernPairs.size());
 
     // bytes required for kerning pairs
-    uint32_t const KERN_PAIR_BYTES = static_cast<uint32_t>(sizeof(PerKernPair) * fontToBinaryData.kernPairs.size());
+    uint32_t const KERN_PAIR_BYTES = static_cast<uint32_t>(sizeof(PerKernPair) * unpackedFontData.kernPairs.size());
 
 
     // number of bytes required to store binary data
     uint32_t const BYTES_REQUIRED = sizeof (NUM_GLYPHS) +        // number of glyphs
-                                    GLYPHS_BYTES +               // Actual glyph data
+                                    GLYPH_MAPPING_BYTES +        // Bytes required to store GlyphIndex-uint32_t key value pairs
                                     GLYPHS_DATA_BYTES +          // Glyph data stored in matrix
                                     sizeof (BITMAP_BYTES) +      // Bytes required to store bitmap
                                     sizeof (BITMAP_WIDTH) +      // Width of bitmap 
                                     sizeof (BITMAP_HEIGHT) +     // Height of bitmap
                                     BITMAP_BYTES +               // Actual bitmap data
-                                    sizeof(NUM_GLYPH_KERNINGS) + // Number of unique glyph kernings
-                                    GLYPH_KERNING_BYTES +        // Bytes required for Glyph specific kernings
                                     sizeof(NUM_KERN_PAIRS) +     // Number of unique kern pairs
                                     KERN_PAIR_BYTES;             // Bytes required for Kerning pairs
 
-    std::vector<char> toFileData{};
+    std::vector<uint8_t> toFileData{};
     uint32_t memoryCursor = 0;
     toFileData.resize(BYTES_REQUIRED);
 
@@ -286,12 +277,18 @@ namespace SH_COMP
     std::memcpy (toFileData.data() + memoryCursor, &NUM_GLYPHS, sizeof(NUM_GLYPHS));
     memoryCursor += sizeof(NUM_GLYPHS);
 
-    // Write glyphs themselves
-    std::memcpy(toFileData.data() + memoryCursor, fontToBinaryData.glyphs.data(), GLYPHS_BYTES);
-    memoryCursor += GLYPHS_BYTES;
+    // write the glyph indexing data
+    for (auto const& [GLYPH, INDEX] : unpackedFontData.glyphMappings)
+    {
+      GlyphIndexingData INDEXING_DATA{GLYPH, INDEX };
+
+      // Write each glyph's unique index into the data container
+      std::memcpy(toFileData.data() + memoryCursor, &INDEXING_DATA, sizeof(GlyphIndexingData));
+      memoryCursor += sizeof(GlyphIndexingData);
+    }
 
     // write the glyph data
-    std::memcpy(toFileData.data() + memoryCursor, fontToBinaryData.glyphTransformations.data(), GLYPHS_BYTES);
+    std::memcpy(toFileData.data() + memoryCursor, unpackedFontData.glyphData.data(), GLYPHS_DATA_BYTES);
     memoryCursor += GLYPHS_DATA_BYTES;
 
     // Write the bitmap's size in bytes
@@ -307,27 +304,15 @@ namespace SH_COMP
     memoryCursor += sizeof(BITMAP_HEIGHT);
 
     // Write the bitmap data
-    std::memcpy(toFileData.data() + memoryCursor, fontToBinaryData.fontBitmap.operator msdf_atlas::byte const* (), BITMAP_BYTES);
+    std::memcpy(toFileData.data() + memoryCursor, unpackedFontData.fontBitmap.data(), BITMAP_BYTES);
     memoryCursor += BITMAP_BYTES;
 
-    // Number of glyph kernings
-    std::memcpy (toFileData.data() + memoryCursor, &NUM_GLYPH_KERNINGS, sizeof(NUM_GLYPH_KERNINGS));
-    memoryCursor += sizeof(NUM_GLYPH_KERNINGS);
-
-    // Write each per glyph kerning
-    for (auto const& [GLYPH, KERNING]  : fontToBinaryData.glyphKerning)
-    {
-      PerGlyphKerning const GLYPH_KERNING{ GLYPH, KERNING};
-      std::memcpy(toFileData.data() + memoryCursor, &GLYPH_KERNING, sizeof(PerGlyphKerning));
-      memoryCursor += sizeof(PerGlyphKerning);
-    }
-
-    // Number of glyph kernings
+    // Number of glyph kern pairs
     std::memcpy(toFileData.data() + memoryCursor, &NUM_KERN_PAIRS, sizeof(NUM_KERN_PAIRS));
     memoryCursor += sizeof(NUM_KERN_PAIRS);
 
     // Write unique kerning pairs
-    for (auto const& [PAIR, KERNING] : fontToBinaryData.kernPairs)
+    for (auto const& [PAIR, KERNING] : unpackedFontData.kernPairs)
     {
       PerKernPair const PER_KERN_PAIR{ PAIR.first, PAIR.second, KERNING };
       std::memcpy(toFileData.data() + memoryCursor, &PER_KERN_PAIR, sizeof(PerKernPair));
@@ -338,37 +323,9 @@ namespace SH_COMP
     std::ofstream file{ newPath, std::ios::binary | std::ios::out | std::ios::trunc };
 
     file.write (reinterpret_cast<char const*>(toFileData.data()), BYTES_REQUIRED);
-    //// Write number of glyphs
-    //file.write(reinterpret_cast<char const*>(&NUM_GLYPHS), sizeof (uint32_t));
-
-    //// Write the glphys (same order as above)
-    //file.write(reinterpret_cast<char const*>(fontToBinaryData.glyphs.data()), GLYPHS_BYTES);
-
-    //// Write the data of each glyph in the same order as the glyphs (stored as matrix)
-    //file.write(reinterpret_cast<char const*>(fontToBinaryData.glyphTransformations.data()), GLYPHS_DATA_BYTES);
-
-    //file.write(reinterpret_cast<char const*>(&BITMAP_BYTES), sizeof(uint32_t));
-
-    //// Write width of bitmap
-    //file.write(reinterpret_cast<char const*>(&BITMAP_WIDTH), sizeof (uint32_t));
-
-    //// Write height of bitmap
-    //file.write(reinterpret_cast<char const*>(&BITMAP_HEIGHT), sizeof(uint32_t));
-
-    //// now we write the actual bitmap
-    ////file.write(reinterpret_cast<char const*>(asset.bitmapData.get()), BITMAP_BYTES);
-    //file.write(reinterpret_cast<char const*>(fontToBinaryData.fontBitmap.operator msdf_atlas::byte const* ()), BITMAP_BYTES);
 
     file.close();
 
-    // Write to a separate image file that just contains the atlas
-    bool imageSaved = msdf_atlas::saveImage(fontToBinaryData.fontBitmap.operator msdfgen::BitmapConstRef<msdf_atlas::byte, 4>(), 
-                          msdf_atlas::ImageFormat::PNG, 
-                          path.replace_extension(".png").string().c_str(),
-                          msdf_atlas::YDirection::TOP_DOWN);
-
-    if (!imageSaved)
-      std::cout << "Failed to save image. " << std::endl;
 
 
     return newPath;
