@@ -8,9 +8,9 @@ namespace dash_tools
   {
 
   public:
-    Font* ReadAndUnpackFileData (AssetPath path) noexcept;
+    static Font* ReadAndUnpackFileData (AssetPath path) noexcept;
 
   private:
-    Font* unpackFontBinary (std::vector<uint8_t> const& binaryData) noexcept;
+    static Font* unpackFontBinary (std::vector<uint8_t> const& binaryData) noexcept;
   };
 }

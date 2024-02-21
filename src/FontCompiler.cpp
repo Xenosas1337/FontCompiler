@@ -46,11 +46,13 @@ namespace dash_tools
       // bounding box of glyph as it should be placed on the baseline
       double atlasPL = 0.0, atlasPR = 0.0, atlasPT = 0.0, atlasPB = 0.0;
 
-      // initialize the bounding boxes
+      // Get the glyph's bounding box in bitmap space. 
       glyphGeometry[i].getQuadAtlasBounds(atlasL, atlasB, atlasR, atlasT);
+
+      // Get the quad's 
       glyphGeometry[i].getQuadPlaneBounds(atlasPL, atlasPB, atlasPR, atlasPT);
 
-      // normalize the bounding box to (0 - 1).
+      // normalize the bounding box to 0.0f-1.0f (i.e. texture space) 
       atlasL /= BITMAP_WIDTH;
       atlasR /= BITMAP_WIDTH;
       atlasT /= BITMAP_HEIGHT;
@@ -70,7 +72,7 @@ namespace dash_tools
           NORMALIZED_TEX_DIMS[0],       0.0f,                     0.0f,                        0.0f,
           0.0f,                       NORMALIZED_TEX_DIMS[1],     0.0f,                        0.0f,
 
-          // For translating the tex coords
+          // For translating the tex coords to correct offset in bitmap texture
           static_cast<float>(atlasL), static_cast<float>(atlasB), 1.0f,                        0.0f,
 
           // Stores the transformation for a quad to correctly shape the glyph (first 2 values) and the bearing (last 2)

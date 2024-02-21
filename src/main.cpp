@@ -3,6 +3,7 @@
 #include <vector>
 #include <filesystem>
 #include <iostream>
+#include "FontLoader.hpp"
 
 int main(int argc, char* argv[])
 {
@@ -46,6 +47,11 @@ int main(int argc, char* argv[])
 
   //SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, "test_font/SegoeUI.ttf");
   msdfgen::deinitializeFreetype(freetypeHandle);
+
+  dash_tools::AssetPath dashFontPath = "Fonts/times.dash_font";
+
+  dash_tools::Font* newFont = dash_tools::FontLoader::ReadAndUnpackFileData(dashFontPath);
+  (void)newFont;
 
   return 0;
 }

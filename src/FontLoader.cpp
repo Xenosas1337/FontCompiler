@@ -90,6 +90,7 @@ namespace dash_tools
         PerKernPair kernPairData{};
         std::memcpy(&kernPairData, binaryData.data() + memoryCursor, sizeof(PerKernPair));
         unpackedFontData.kernPairs.emplace(std::pair{ kernPairData.lhs, kernPairData.rhs }, kernPairData.kerning);
+        memoryCursor += sizeof(PerKernPair);
       }
     }
 
