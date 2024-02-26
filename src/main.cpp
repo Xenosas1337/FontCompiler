@@ -50,7 +50,8 @@ int main(int argc, char* argv[])
 
   dash_tools::AssetPath dashFontPath = "Fonts/times.dash_font";
 
-  dash_tools::Font* newFont = dash_tools::FontLoader::ReadAndUnpackFileData(dashFontPath);
+  //auto newFont = dash_tools::FontLoader::ReadAndUnpackFileData<std::unique_ptr<dash_tools::Font>>(dashFontPath);
+  auto newFont = dash_tools::FontLoader::ReadAndUnpackFileData<dash_tools::Font*>(dashFontPath);
   (void)newFont;
 
   return 0;

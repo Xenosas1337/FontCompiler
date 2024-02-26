@@ -18,11 +18,11 @@ namespace dash_tools
   static constexpr uint32_t NUM_CHANNELS = 4;
   static constexpr uint32_t BYTES_PER_CHANNEL = 1;
 
-  static constexpr uint32_t GLPYH_TEX_DIMS_X_ARRAY_INDEX = 0;
-  static constexpr uint32_t GLPYH_TEX_DIMS_Y_ARRAY_INDEX = 1;
-  static constexpr uint32_t GLPYH_KERNING_ARRAY_INDEX = 3;
-  static constexpr uint32_t GLPYH_TEX_POS_X_ARRAY_INDEX = 4;
-  static constexpr uint32_t GLPYH_TEX_POS_Y_ARRAY_INDEX = 5;
+  static constexpr uint32_t GLYPH_TEX_DIMS_X_ARRAY_INDEX = 0;
+  static constexpr uint32_t GLYPH_TEX_DIMS_Y_ARRAY_INDEX = 1;
+  static constexpr uint32_t GLYPH_KERNING_ARRAY_INDEX = 3;
+  static constexpr uint32_t GLYPH_TEX_POS_X_ARRAY_INDEX = 4;
+  static constexpr uint32_t GLYPH_TEX_POS_Y_ARRAY_INDEX = 5;
   static constexpr uint32_t GLYPH_SCALE_X_ARRAY_INDEX = 8;
   static constexpr uint32_t GLYPH_SCALE_Y_ARRAY_INDEX = 9;
   static constexpr uint32_t GLYPH_POS_X_ARRAY_INDEX = 10;
@@ -55,9 +55,7 @@ namespace dash_tools
     // Data containing character and uv transformation data and other misc data stored in a single matrix
     std::vector<GlyphData> glyphData;
 
-    // Actual bitmap data. 
-    // Will be writing width and height to binary file from here too
-    //msdfgen::Bitmap<msdf_atlas::byte, 4> fontBitmap;
+    // Actual bitmap data
     std::vector<BitmapPixelType> fontBitmap;
 
     // Width of the bitmap

@@ -40,7 +40,7 @@ namespace dash_tools
       return {};
 
     // Get the advance of the glyph
-    float advance = m_fontData.glyphData[m_fontData.glyphMappings.at(lhs)].data[GLPYH_KERNING_ARRAY_INDEX];
+    float advance = m_fontData.glyphData[m_fontData.glyphMappings.at(lhs)].data[GLYPH_KERNING_ARRAY_INDEX];
 
     // Add with kern pair advance if exists
     std::pair<GlyphType, GlyphType> glyphPair{lhs, rhs};
