@@ -30,7 +30,7 @@ namespace dash_tools
         ifs.read(reinterpret_cast<char*>(binaryData.data()), FILE_SIZE);
 
         // Proceed to read contents chunk by chunk and save it into new font object.
-        auto newFont = unpackFontBinary<PointerType>(binaryData);
+        auto newFont = UnpackFromBinary<PointerType>(binaryData.data());
 
         // Return the new font object
         if constexpr (std::is_same_v<PointerType, Font*>)
@@ -45,12 +45,11 @@ namespace dash_tools
       }
     }
 
-  private:
     template <typename PointerType, typename = std::enable_if_t<
       std::is_same_v<PointerType, Font*> ||
       std::is_same_v<PointerType, std::shared_ptr<Font>> ||
       std::is_same_v<PointerType, std::unique_ptr<Font>>>>
-      static PointerType unpackFontBinary(std::vector<uint8_t> const& binaryData) noexcept
+      static PointerType UnpackFromBinary(uint8_t const* binaryData) noexcept
     {
       // Prepare object to initialize font object
       UnpackedFontData unpackedFontData{};
@@ -63,14 +62,14 @@ namespace dash_tools
 
         // Get number of glyphs available
         uint32_t numGlyphs{ 0 };
-        std::memcpy(&numGlyphs, binaryData.data() + memoryCursor, sizeof(numGlyphs));
+        std::memcpy(&numGlyphs, binaryData + memoryCursor, sizeof(numGlyphs));
         memoryCursor += sizeof(numGlyphs);
 
         // Get glyph indexing data 
         for (uint32_t i = 0; i < numGlyphs; ++i)
         {
           GlyphIndexingData indexingData{};
-          std::memcpy(&indexingData, binaryData.data() + memoryCursor, sizeof(GlyphIndexingData));
+          std::memcpy(&indexingData, binaryData + memoryCursor, sizeof(GlyphIndexingData));
           memoryCursor += sizeof(GlyphIndexingData);
 
           unpackedFontData.glyphMappings.emplace(indexingData.glyph, indexingData.containerIndex);
@@ -79,35 +78,35 @@ namespace dash_tools
         // Get glyph data (since it's all stored contiguously, 1 single memcpy will suffice)
         uint32_t const GLYPH_DATA_BYTES = sizeof(GlyphData) * numGlyphs;
         unpackedFontData.glyphData.resize(numGlyphs);
-        std::memcpy(unpackedFontData.glyphData.data(), binaryData.data() + memoryCursor, GLYPH_DATA_BYTES);
+        std::memcpy(unpackedFontData.glyphData.data(), binaryData + memoryCursor, GLYPH_DATA_BYTES);
         memoryCursor += GLYPH_DATA_BYTES;
 
         // Get the bitmap's size in bytes
         uint32_t bitmapBytes{};
-        std::memcpy(&bitmapBytes, binaryData.data() + memoryCursor, sizeof(bitmapBytes));
+        std::memcpy(&bitmapBytes, binaryData + memoryCursor, sizeof(bitmapBytes));
         memoryCursor += sizeof(bitmapBytes);
 
         // Get the bitmap's dimensions
-        std::memcpy(&unpackedFontData.bitmapWidth, binaryData.data() + memoryCursor, sizeof(unpackedFontData.bitmapWidth));
+        std::memcpy(&unpackedFontData.bitmapWidth, binaryData + memoryCursor, sizeof(unpackedFontData.bitmapWidth));
         memoryCursor += sizeof(unpackedFontData.bitmapWidth);
-        std::memcpy(&unpackedFontData.bitmapHeight, binaryData.data() + memoryCursor, sizeof(unpackedFontData.bitmapHeight));
+        std::memcpy(&unpackedFontData.bitmapHeight, binaryData + memoryCursor, sizeof(unpackedFontData.bitmapHeight));
         memoryCursor += sizeof(unpackedFontData.bitmapHeight);
 
         // Get the actual bitmap data
         unpackedFontData.fontBitmap.resize(bitmapBytes);
-        std::memcpy(unpackedFontData.fontBitmap.data(), binaryData.data() + memoryCursor, bitmapBytes);
+        std::memcpy(unpackedFontData.fontBitmap.data(), binaryData + memoryCursor, bitmapBytes);
         memoryCursor += bitmapBytes;
 
         // Get number of kern pairs
         uint32_t numKernPairs{};
-        std::memcpy(&numKernPairs, binaryData.data() + memoryCursor, sizeof(numKernPairs));
+        std::memcpy(&numKernPairs, binaryData + memoryCursor, sizeof(numKernPairs));
         memoryCursor += sizeof(numKernPairs);
 
         // Get kern pair data and place into map one by one
         for (uint32_t i = 0; i < numKernPairs; ++i)
         {
           PerKernPair kernPairData{};
-          std::memcpy(&kernPairData, binaryData.data() + memoryCursor, sizeof(PerKernPair));
+          std::memcpy(&kernPairData, binaryData + memoryCursor, sizeof(PerKernPair));
           unpackedFontData.kernPairs.emplace(std::pair{ kernPairData.lhs, kernPairData.rhs }, kernPairData.kerning);
           memoryCursor += sizeof(PerKernPair);
         }

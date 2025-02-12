@@ -45,14 +45,8 @@ int main(int argc, char* argv[])
     dash_tools::FontCompiler::LoadAndCompileFont(freetypeHandle, path);
   }
 
-  //SH_COMP::FontCompiler::LoadAndCompileFont(freetypeHandle, "test_font/SegoeUI.ttf");
   msdfgen::deinitializeFreetype(freetypeHandle);
 
-  dash_tools::AssetPath dashFontPath = "Fonts/times.dash_font";
-
-  //auto newFont = dash_tools::FontLoader::ReadAndUnpackFileData<std::unique_ptr<dash_tools::Font>>(dashFontPath);
-  auto newFont = dash_tools::FontLoader::ReadAndUnpackFileData<dash_tools::Font*>(dashFontPath);
-  (void)newFont;
 
   return 0;
 }

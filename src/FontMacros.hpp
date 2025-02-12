@@ -11,6 +11,7 @@ namespace dash_tools
 
   // ASSET EXTENSIONS
   constexpr std::string_view FONT_EXTENSION{ ".dash_font" };
+  constexpr std::string_view HPP_EXTENSION{ ".hpp" };
 
   // EXTERNAL EXTENSIONS
   constexpr std::string_view TTF_EXTENSION{ ".ttf" };

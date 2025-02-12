@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include "AssetMacros.hpp"
+#include <filesystem>
+#include <map>
 
 namespace dash_tools
 {
@@ -15,7 +16,7 @@ namespace dash_tools
   // However, we really only care about RGBA for now 8 bit per channel for now
   using BitmapPixelType = uint32_t; 
   static constexpr uint32_t FONT_MATRIX_SIZE = 16;
-  static constexpr uint32_t NUM_CHANNELS = 4;
+  static constexpr uint32_t NUM_CHANNELS = 3;
   static constexpr uint32_t BYTES_PER_CHANNEL = 1;
 
   static constexpr uint32_t GLYPH_TEX_DIMS_X_ARRAY_INDEX = 0;

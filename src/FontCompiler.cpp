@@ -64,6 +64,8 @@ namespace dash_tools
       // When we render the quad, it has to correctly scale depending on what letter/glyph we are rendering. This is for that scale.
       float const QUAD_SCALE[2] { static_cast<float> (atlasPR - atlasPL), static_cast<float> (atlasPT - atlasPB) };
 
+      auto const CODEPOINT = glyphGeometry[i].getCodepoint();
+
       // initialize a matrix for uv and quad transformation data
       GlyphData currentGlyphData
       { 
@@ -77,7 +79,7 @@ namespace dash_tools
           // Stores the transformation for a quad to correctly shape the glyph (first 2 values) and the bearing (last 2)
           QUAD_SCALE[0],              QUAD_SCALE[1],              static_cast<float>(atlasPL), static_cast<float>(atlasPB),
 
-          0.0f,                       0.0f,                       0.0f,                        0.0f,
+          0.0f,                       0.0f,                       0.0f,                        *reinterpret_cast<float const*>(&CODEPOINT),
           },
       };
 
@@ -109,7 +111,7 @@ namespace dash_tools
   
   */
   /***************************************************************************/
-  std::optional<AssetPath> FontCompiler::LoadAndCompileFont(msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept
+  bool FontCompiler::LoadAndCompileFont(msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept
   {
     msdfgen::FontHandle* fontHandle = nullptr;
     
@@ -122,14 +124,17 @@ namespace dash_tools
 
       // No path to binary format
       if (!unpackedFontData)
-        return {};
+        return false;
 
-      return PackFontDataToFile(path, *unpackedFontData);
+      PackFontDataToBinary(path, *unpackedFontData);
+      
+
+      return true;
     }
 
     std::cout << "Unable to open font file: " << path.string() << std::endl;
 
-    return {};
+    return false;
   }
 
   /***************************************************************************/
@@ -181,23 +186,23 @@ namespace dash_tools
     atlasPacker.getDimensions(width, height);
 
    // generate the atlas
-    msdf_atlas::ImmediateAtlasGenerator<float, 4, msdf_atlas::mtsdfGenerator, msdf_atlas::BitmapAtlasStorage<msdf_atlas::byte, 4>> generator(width, height);
+    msdf_atlas::ImmediateAtlasGenerator<float, NUM_CHANNELS, msdf_atlas::msdfGenerator, msdf_atlas::BitmapAtlasStorage<msdf_atlas::byte, NUM_CHANNELS>> generator(width, height);
     msdf_atlas::GeneratorAttributes genAttribs;
     generator.setAttributes(genAttribs);
     generator.setThreadCount(4);
     generator.generate(glyphData.data(), static_cast<int>(glyphData.size()));
 
     // Write to a separate image file that just contains the atlas for testing
-    bool imageSaved = msdf_atlas::saveImage(generator.atlasStorage().operator msdfgen::BitmapConstRef<msdf_atlas::byte, 4>(),
-                                            msdf_atlas::ImageFormat::PNG,
-                                            path.replace_extension(".png").string().c_str(),
-                                            msdf_atlas::YDirection::TOP_DOWN);
+    bool imageSaved = msdf_atlas::saveImage(generator.atlasStorage().operator msdfgen::BitmapConstRef<msdf_atlas::byte, NUM_CHANNELS>(),
+      msdf_atlas::ImageFormat::PNG,
+      path.replace_extension(".png").string().c_str(),
+      msdf_atlas::YDirection::TOP_DOWN);
 
     if (!imageSaved)
       std::cout << "Tester code: Failed to save image. " << std::endl;
 
-    //msdfgen::Bitmap<msdfgen::byte, 3> fontBitmap;
-    msdfgen::Bitmap<msdf_atlas::byte, 4> fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, 4>&&)generator.atlasStorage()));
+    //msdfgen::Bitmap<msdfgen::byte, NUM_CHANNELS> fontBitmap;
+    msdfgen::Bitmap<msdf_atlas::byte, NUM_CHANNELS> fontBitmap = std::move(((msdfgen::Bitmap<msdf_atlas::byte, NUM_CHANNELS>&&)generator.atlasStorage()));
 
     // Copy the bitmap to unpacked data object
     uint32_t const BITMAP_BYTES = fontBitmap.width() * fontBitmap.height() * NUM_CHANNELS * BYTES_PER_CHANNEL;
@@ -232,11 +237,10 @@ namespace dash_tools
   
   */ 
   /***************************************************************************/
-  std::string FontCompiler::PackFontDataToFile(AssetPath path, UnpackedFontData const& unpackedFontData) noexcept
+  void FontCompiler::PackFontDataToBinary(AssetPath path, UnpackedFontData const& unpackedFontData) noexcept
   {
     std::string newPath{ path.string() };
     newPath = newPath.substr(0, newPath.find_last_of('.'));
-    newPath += FONT_EXTENSION.data();
 
     // Bitmap dimensions saved locally for convenience
     uint32_t const BITMAP_WIDTH = unpackedFontData.bitmapWidth;
@@ -320,17 +324,48 @@ namespace dash_tools
       std::memcpy(toFileData.data() + memoryCursor, &PER_KERN_PAIR, sizeof(PerKernPair));
       memoryCursor += sizeof(PerKernPair);
     }
-    
-    // Open a file for writing
-    std::ofstream file{ newPath, std::ios::binary | std::ios::out | std::ios::trunc };
 
-    file.write (reinterpret_cast<char const*>(toFileData.data()), BYTES_REQUIRED);
+    // Write to the binary file
+    {
+      // Open a file for writing
+      std::ofstream binaryFile{ newPath + FONT_EXTENSION.data(), std::ios::binary | std::ios::out | std::ios::trunc };
+      binaryFile.write(reinterpret_cast<char const*>(toFileData.data()), BYTES_REQUIRED);
+      binaryFile.close();
+    }
 
-    file.close();
+    // Write to the hpp file
+    {
+      std::ofstream hppFile{ newPath + HPP_EXTENSION.data() };
+      if (hppFile.is_open())
+      {
+        std::string arrayName = path.stem().replace_extension("").string();
+        std::erase_if(arrayName, [] (auto c) { return !std::isalnum(c); });
 
+        std::stringstream ss{};
+        ss << "#pragma once\n";
+        ss << "#include <cstdint>\n";
+        ss << "static const uint8_t " << arrayName << "[] = {\n";
 
+        char counter = 0;
+        for (uint8_t c : toFileData)
+        {
+          ss << "0x" << std::hex << static_cast<unsigned int>(c) << ", ";
+          ++counter;
+          if (counter == 16)
+          {
+            counter = 0;
+            ss << "\n";
+          }
 
-    return newPath;
+        }
+
+        ss << "};\n";
+
+        hppFile << ss.rdbuf();
+      }
+
+      hppFile.close();
+    }
   }
 
 }

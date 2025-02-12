@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AssetMacros.hpp"
+#include "FontMacros.hpp"
 #include "msdf-atlas-gen/msdf-atlas-gen.h"
 #include "FontCommonTypes.hpp"
 #include <optional>
@@ -15,9 +15,9 @@ namespace dash_tools
                                          msdf_atlas::FontGeometry const&               fontGeometry) noexcept;
   	
   public:
-    static std::optional<AssetPath> LoadAndCompileFont   (msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept;
-    static UnpackedFontData const*  CompileFontToMemory  (msdfgen::FontHandle* fontHandle, AssetPath path) noexcept;
-    static std::string              PackFontDataToFile  (AssetPath path, UnpackedFontData const& unpackedFontData) noexcept;
+    static bool                     LoadAndCompileFont         (msdfgen::FreetypeHandle* freetypeHandle, AssetPath path) noexcept;
+    static UnpackedFontData const*  CompileFontToMemory        (msdfgen::FontHandle* fontHandle, AssetPath path) noexcept;
+    static void                     PackFontDataToBinary       (AssetPath path, UnpackedFontData const& unpackedFontData) noexcept;
     
   };
 }
